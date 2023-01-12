@@ -46,7 +46,7 @@ def recommend_movies(
     movies_df: pd.DataFrame,
     similarity: np.ndarray,
     top_n: int = 5,
-    min_similarity: float = 0.05,
+    min_similarity: float = 0.0,
 ) -> list[dict[str, Any]]:
     """
     Recommend similar movies based on cosine similarity scores.
@@ -56,8 +56,11 @@ def recommend_movies(
     if not title:
         return get_popular_fallback(movies_df, top_n=top_n)
 
-    title_to_index = pd.Series(movies_df.index, index=movies_df["title"].str.lower()).drop_duplicates()
-    movie_index = title_to_index.get(title.lower())
+    normalized_title = title.strip().lower()
+    title_to_index = pd.Series(
+        movies_df.index, index=movies_df["title"].astype(str).str.strip().str.lower()
+    ).drop_duplicates()
+    movie_index = title_to_index.get(normalized_title)
 
     if movie_index is None:
         return get_popular_fallback(movies_df, top_n=top_n)
@@ -69,7 +72,8 @@ def recommend_movies(
     recs: list[dict[str, Any]] = []
     for idx in ranked_indices:
         score = float(distances[idx])
-        if score < min_similarity:
+        # Keep only meaningful positive similarity in model-driven results.
+        if score <= min_similarity:
             continue
         row = movies_df.iloc[idx]
         recs.append(
@@ -86,11 +90,14 @@ def recommend_movies(
         if len(recs) >= top_n:
             break
 
+    if not recs:
+        return get_popular_fallback(movies_df, top_n=top_n)
+
     if len(recs) < top_n:
         fallback = get_popular_fallback(movies_df, top_n=top_n * 2)
         existing_titles = {item["title"] for item in recs}
         for item in fallback:
-            if item["title"] not in existing_titles and item["title"].lower() != title.lower():
+            if item["title"] not in existing_titles and item["title"].lower() != normalized_title:
                 recs.append(item)
             if len(recs) >= top_n:
                 break
