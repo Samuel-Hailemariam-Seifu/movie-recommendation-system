@@ -1,0 +1,26 @@
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Tooling
+.pytest_cache/
+.mypy_cache/
+.DS_Store
+
+# Data and artifacts
+models/*.joblib
+models/*.pkl
+data/processed/*.csv
+reports/*.png
+reports/*.json
+
+# Streamlit
+.streamlit/secrets.toml
+
